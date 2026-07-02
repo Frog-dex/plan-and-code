@@ -40,7 +40,7 @@ You browse your real site, drag gold "planned" boxes where things *should* go, s
 No install, no build. Just serve the folder (a server is required — the iframe and ES-module import don't work over `file://`):
 
 ```bash
-git clone https://github.com/blu-inman/plan-and-code.git
+git clone https://github.com/moomoomoo6969/plan-and-code.git
 cd plan-and-code
 python3 -m http.server 8080
 ```
@@ -81,7 +81,7 @@ No screenshots are bundled yet. The fastest tour is the Quick Start above — th
 ## Publish
 
 ```bash
-gh repo create blu-inman/plan-and-code --public --source . --push
+gh repo create moomoomoo6969/plan-and-code --public --source . --push
 ```
 
 ## License
