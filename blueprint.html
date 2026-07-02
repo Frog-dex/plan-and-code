@@ -1,0 +1,424 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Site Blueprint — plan & code</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#071427;color:#bfe6ff;font-family:'Courier New',ui-monospace,monospace;overflow:hidden}
+#wrap{display:flex;height:100%}
+#stagewrap{flex:1;position:relative;padding:10px}
+#frameBox{position:relative;width:100%;height:100%;border:1px solid #17384f;border-radius:6px;overflow:hidden;background:#000}
+#site{position:absolute;inset:0;width:100%;height:100%;border:0}
+#overlay{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+#overlay.browse{pointer-events:none}
+#gridlayer{position:absolute;inset:0;pointer-events:none;opacity:.55;display:none;
+  background-image:linear-gradient(rgba(80,180,255,.14) 1px,transparent 1px),linear-gradient(90deg,rgba(80,180,255,.14) 1px,transparent 1px),linear-gradient(rgba(80,180,255,.28) 1px,transparent 1px),linear-gradient(90deg,rgba(80,180,255,.28) 1px,transparent 1px);
+  background-size:2% 2%,2% 2%,10% 10%,10% 10%}
+body.bp #gridlayer{display:block}
+body.bp #site{filter:saturate(.25) brightness(.75) hue-rotate(190deg)}
+#panel{width:334px;background:#0c1a29;border-left:1px solid #17384f;padding:12px 14px;display:flex;flex-direction:column;gap:8px;overflow:auto}
+h1{font-size:14px;letter-spacing:.16em;color:#7fdfff;margin:0;text-transform:uppercase}
+.sub{font-size:10.5px;color:#5f8ba6;margin:0;letter-spacing:.04em;line-height:1.45}
+.modes{display:flex;flex-wrap:wrap;gap:5px}
+.modes button{flex:1 1 30%;margin:0}
+button{background:#12314a;color:#bfe6ff;border:1px solid #2b6a92;border-radius:6px;padding:7px 8px;font-family:inherit;font-size:11.5px;letter-spacing:.05em;cursor:pointer}
+button:hover{background:#184260}
+button.on{background:#134b39;border-color:#2f8a63;color:#a8f5cf}
+button.warn{border-color:#7a4444;color:#ffb0a0}
+.sel{font-size:12.5px;color:#f0dca0;letter-spacing:.08em;min-height:16px}
+label{font-size:10.5px;color:#7fb0c8;display:block;margin:5px 0 2px;letter-spacing:.06em}
+input[type=text],input[type=number],select,textarea{width:100%;background:#08131f;color:#bfe6ff;border:1px solid #1d4763;border-radius:5px;padding:5px 7px;font-family:inherit;font-size:11.5px}
+textarea{resize:vertical}
+.row{display:flex;gap:6px}.row>*{flex:1}
+.list{display:flex;flex-direction:column;gap:4px}
+.chip{display:flex;align-items:center;gap:6px;background:#0a2036;border:1px solid #1d4763;border-radius:5px;padding:4px 7px;font-size:11px;cursor:pointer}
+.chip:hover{border-color:#2b6a92}
+.chip.on{border-color:#f0dca0;color:#f0dca0}
+.chip .x{margin-left:auto;color:#ff8f7a;cursor:pointer;padding:0 3px}
+.small{font-size:10px;color:#5f8ba6;line-height:1.5}
+.geo{font-size:10.5px;color:#8fd6a8;white-space:pre;line-height:1.5;background:#050d16;border:1px solid #1d4763;border-radius:5px;padding:6px}
+hr{border:0;border-top:1px solid #17384f;margin:4px 0;width:100%}
+#out{height:110px;font-size:9.5px;color:#8fd6a8;background:#050d16}
+.anim{background:#0a2036;border:1px solid #1d4763;border-radius:5px;padding:5px 7px;font-size:10.5px}
+.anim b{color:#ffd98a}
+.anim .x{color:#ff8f7a;cursor:pointer;float:right}
+.tools{display:flex;gap:5px}.tools button{flex:1}
+svg text{user-select:none}
+.legend{font-size:10px;color:#7fb0c8}
+.legend i{display:inline-block;width:14px;height:3px;margin:0 4px 2px 8px;vertical-align:middle}
+</style></head>
+<body class="bp">
+<div id="wrap">
+  <div id="stagewrap"><div id="frameBox">
+    <iframe id="site"></iframe>
+    <div id="gridlayer"></div>
+    <svg id="overlay" class="browse"></svg>
+  </div></div>
+  <div id="panel">
+    <h1>Site Blueprint</h1>
+    <p class="sub">the real site runs inside. cyan = existing area · gold = planned area. Saves locally + exports for AI handoff.</p>
+    <div class="row"><button id="bpTog" class="on">▦ Blueprint</button></div>
+    <div class="modes">
+      <button data-m="browse" class="on">🖱 Browse</button><button data-m="layout">✥ Plan</button><button data-m="note">✎ Notes</button>
+      <button data-m="anim">◉ Animate</button><button data-m="draw">✏ Draw</button>
+    </div>
+    <div id="drawTools" class="tools" style="display:none">
+      <button data-t="pen" class="on">pen</button><button data-t="arrow">arrow</button><button data-t="erase">erase</button>
+    </div>
+    <div class="legend"><i style="background:#41b0ff"></i>existing<i style="background:#f0dca0"></i>planned<i style="background:#a8f5cf"></i>animation path</div>
+    <div class="sel" id="selName">— in Plan mode: hover the site, click to track an element —</div>
+    <div id="editBox" style="display:none">
+      <label>Name (rename the box)</label>
+      <input type="text" id="labTxt">
+      <div class="row"><div><label>plan X %</label><input type="number" id="px" step="0.5"></div><div><label>plan Y %</label><input type="number" id="py" step="0.5"></div></div>
+      <div class="row"><div><label>plan W %</label><input type="number" id="pw" step="0.5"></div><div><label>plan H %</label><input type="number" id="ph" step="0.5"></div></div>
+      <div class="row"><button id="applyLive">⇢ apply plan to live</button><button id="revertLive">↺ revert live</button></div>
+      <div class="row"><button id="resetPlan">⌫ plan = existing</button></div>
+      <div id="geo" class="geo"></div>
+    </div>
+    <div id="noteBox" style="display:none">
+      <label>Notes (one per line)</label>
+      <textarea id="noteTxt" rows="3" placeholder="e.g. shrink 10% on mobile / sits ON the slab"></textarea>
+    </div>
+    <div id="animBox" style="display:none">
+      <label>Animations on this element</label>
+      <div id="animList" class="list"></div>
+      <div class="row"><input type="text" id="aName" placeholder="name (spin-up)"><select id="aTrig"><option>click</option><option>hover</option><option>power-on</option><option>power-off</option><option>always</option><option>scroll</option><option>drag</option></select></div>
+      <div class="row"><input type="text" id="aDur" placeholder="duration (2s)"><input type="text" id="aEase" placeholder="easing (ease-out / friction)"></div>
+      <textarea id="aDesc" rows="2" placeholder="describe the motion"></textarea>
+      <div class="row"><button id="aPath">✏ draw motion path</button><button id="aAdd" class="on">+ add animation</button></div>
+    </div>
+    <hr>
+    <label>Tracked elements <span class="small">(click select · × untrack)</span></label>
+    <div id="elList" class="list"></div>
+    <hr>
+    <button class="on" id="exportAI">⧉ Copy AI HANDOFF spec</button>
+    <div class="row"><button id="exportJSON">⇓ JSON</button><button id="copyCSS">⧉ CSS</button><button id="clearAll" class="warn">✕ wipe</button></div>
+    <textarea id="out" spellcheck="false" placeholder="export appears here"></textarea>
+    <div class="small">Spec: <b>docs/BLUEPRINT-README.md</b>. Any same-origin page: <b>blueprint.html?page=your-page.html</b>. Future AI: read the spec, then apply the JSON.</div>
+  </div>
+</div>
+<script>
+const SVGNS='http://www.w3.org/2000/svg';
+const iframe=document.getElementById('site'), overlay=document.getElementById('overlay');
+const TARGET='./demo/index.html';               // default target page — must be same-origin
+const SITE=new URLSearchParams(location.search).get('page')||TARGET;
+iframe.src=SITE;
+const KEY='plan-and-code-blueprint-v2:'+SITE;
+// Optional friendly names for selectors on YOUR target page (label shown instead of the raw selector).
+const KNOWN={
+  '.topbar':'top-bar','#hero':'hero','#heroTitle':'hero-title','#cta':'cta-button',
+  '#card-1':'card-one','#card-2':'card-two','#gallery':'gallery','#badge':'badge','#foot':'footer'
+};
+let DB=JSON.parse(localStorage.getItem(KEY)||'null')||{version:2,site:SITE,elements:{},drawings:{}};
+function save(){ localStorage.setItem(KEY,JSON.stringify(DB)); }
+let mode='browse', tool='pen', sel=null, hoverEl=null, pathForAnim=null, pathCapture=false;
+
+const idoc=()=>{ try{ return iframe.contentDocument; }catch(e){ return null; } };
+// Multi-view pages: set <body data-view="..."> in the target; drawings + view tags are stored per view.
+const view=()=>{ const d=idoc(); return d&&d.body?(d.body.dataset.view||'default'):'?'; };
+function cssPath(el){
+  if(!el||el.nodeType!==1) return null;
+  if(el.id) return '#'+el.id;
+  for(const k in KNOWN){ try{ if(el.matches(k)) return k; }catch(e){} }
+  const cls=[...el.classList].slice(0,2).map(c=>'.'+CSS.escape(c)).join('');
+  if(cls){ const s=el.tagName.toLowerCase()+cls; try{ if(idoc().querySelectorAll(s).length===1) return s; }catch(e){} }
+  let p=el.parentElement,idx=p?[...p.children].indexOf(el)+1:1;
+  return (p?cssPath(p)+' > ':'')+el.tagName.toLowerCase()+':nth-child('+idx+')';
+}
+function label(selr){ return (DB.elements[selr]&&DB.elements[selr].label)||KNOWN[selr]||selr; }
+// existing rect of the live element, in viewport %
+function liveRect(selr){
+  const d=idoc(); if(!d) return null;
+  let t; try{ t=d.querySelector(selr); }catch(e){ return null; }
+  if(!t) return null;
+  const cs=d.defaultView.getComputedStyle(t);
+  if(cs.display==='none'||cs.visibility==='hidden') return null;
+  const r=t.getBoundingClientRect(), W=d.documentElement.clientWidth||1, H=d.documentElement.clientHeight||1;
+  if(r.width<2&&r.height<2) return null;
+  return {x:r.x/W*100,y:r.y/H*100,w:r.width/W*100,h:r.height/H*100};
+}
+function track(selr){
+  if(!DB.elements[selr]){
+    DB.elements[selr]={label:KNOWN[selr]||selr.replace(/^[.#]/,''),view:view(),plan:null,notes:[],anims:[],applied:null};
+  }
+  save();
+}
+function planOf(selr){ const rec=DB.elements[selr]; if(!rec)return null; if(rec.plan) return rec.plan; const lr=liveRect(selr); return lr?{x:+lr.x.toFixed(1),y:+lr.y.toFixed(1),w:+lr.w.toFixed(1),h:+lr.h.toFixed(1)}:null; }
+function ensurePlan(selr){ const rec=DB.elements[selr]; if(rec&&!rec.plan){ rec.plan=planOf(selr); } return rec&&rec.plan; }
+
+// ---- overlay ----
+function el(tag,attrs,parent){ const e=document.createElementNS(SVGNS,tag); for(const k in attrs)e.setAttribute(k,attrs[k]); (parent||overlay).appendChild(e); return e; }
+function P2px(p){ const r=overlay.getBoundingClientRect(); return [p[0]/100*r.width, p[1]/100*r.height]; }
+function toPct(x,y){ const r=overlay.getBoundingClientRect(); return [Math.round(x/r.width*1000)/10, Math.round(y/r.height*1000)/10]; }
+function R2px(rc){ const r=overlay.getBoundingClientRect(); return {x:rc.x/100*r.width,y:rc.y/100*r.height,w:rc.w/100*r.width,h:rc.h/100*r.height}; }
+function redraw(){
+  overlay.innerHTML='';
+  const d=idoc(); if(!d||!d.body) return;
+  const v=view();
+  (DB.drawings[v]||[]).forEach((s,i)=>{
+    const pts=s.points.map(P2px).map(p=>p.join(',')).join(' ');
+    el('polyline',{points:pts,fill:'none',stroke:s.color||'#7fdfff','stroke-width':2.5,'stroke-linecap':'round'});
+    if(s.tool==='arrow'&&s.points.length>1){ const a=P2px(s.points[s.points.length-2]),b=P2px(s.points[s.points.length-1]);
+      const ang=Math.atan2(b[1]-a[1],b[0]-a[0]);
+      el('polygon',{points:`${b[0]},${b[1]} ${b[0]-12*Math.cos(ang-0.4)},${b[1]-12*Math.sin(ang-0.4)} ${b[0]-12*Math.cos(ang+0.4)},${b[1]-12*Math.sin(ang+0.4)}`,fill:s.color||'#7fdfff'});
+    }
+  });
+  for(const selr in DB.elements){
+    const rec=DB.elements[selr];
+    const lr=liveRect(selr);
+    if(!lr) continue;
+    rec.view=v;
+    const isSel=sel===selr;
+    const L=R2px(lr);
+    // EXISTING (cyan solid)
+    el('rect',{x:L.x,y:L.y,width:L.w,height:L.h,fill:'none',stroke:'#41b0ff','stroke-width':isSel?2:1.2,'stroke-dasharray':'','data-sel':selr,opacity:isSel?0.95:0.6,style:'cursor:pointer'});
+    // PLANNED (gold dashed) — only drawn if a plan exists and differs OR selected
+    const pl=rec.plan;
+    if(pl){
+      const Q=R2px(pl);
+      const moved=Math.abs(pl.x-lr.x)>0.15||Math.abs(pl.y-lr.y)>0.15||Math.abs(pl.w-lr.w)>0.15||Math.abs(pl.h-lr.h)>0.15;
+      if(moved) el('line',{x1:L.x+L.w/2,y1:L.y+L.h/2,x2:Q.x+Q.w/2,y2:Q.y+Q.h/2,stroke:'#f0dca0','stroke-width':1.4,'stroke-dasharray':'3 5',opacity:.8});
+      el('rect',{x:Q.x,y:Q.y,width:Q.w,height:Q.h,fill:isSel?'rgba(240,220,160,.10)':'rgba(240,220,160,.04)',stroke:'#f0dca0','stroke-width':isSel?2.6:1.6,'stroke-dasharray':'8 5','data-plan':selr,style:'cursor:grab'});
+      // resize grip (SE)
+      if(isSel) el('rect',{x:Q.x+Q.w-7,y:Q.y+Q.h-7,width:14,height:14,fill:'#f0dca0',stroke:'#071427','stroke-width':2,'data-grip':selr,style:'cursor:nwse-resize'});
+      const tg=el('g',{'data-plan':selr,style:'cursor:grab'});
+      el('rect',{x:Q.x,y:Math.max(0,Q.y-16),width:Math.min(Math.max(Q.w,70),16+label(selr).length*7.2),height:15,fill:'rgba(7,20,39,.85)'},tg);
+      el('text',{x:Q.x+4,y:Math.max(11,Q.y-4),fill:isSel?'#f0dca0':'#d8c58a','font-size':11,'letter-spacing':'.06em'},tg).textContent=label(selr);
+      if(rec.notes.length) el('text',{x:Q.x+Q.w-14,y:Math.max(11,Q.y-4),fill:'#ffd98a','font-size':11},tg).textContent='✎'+rec.notes.length;
+      if(rec.anims.length) el('text',{x:Q.x+Q.w-34,y:Math.max(11,Q.y-4),fill:'#a8f5cf','font-size':11},tg).textContent='◉'+rec.anims.length;
+    } else {
+      const tg=el('g',{'data-sel':selr,style:'cursor:pointer'});
+      el('text',{x:L.x+4,y:Math.max(11,L.y-4),fill:isSel?'#7fdfff':'#4f8cb8','font-size':11},tg).textContent=label(selr);
+    }
+    (rec.anims||[]).forEach(a=>{ if(a.path&&a.path.length>1){ const pts=a.path.map(P2px).map(p=>p.join(',')).join(' ');
+      el('polyline',{points:pts,fill:'none',stroke:'#a8f5cf','stroke-width':2,'stroke-dasharray':'2 5',opacity:isSel?0.95:0.35}); } });
+  }
+  if(hoverEl&&(mode==='layout'||mode==='note'||mode==='anim')){
+    const d2=idoc(), r=hoverEl.getBoundingClientRect(), fb=overlay.getBoundingClientRect();
+    const sx=fb.width/(d2.documentElement.clientWidth||1), sy=fb.height/(d2.documentElement.clientHeight||1);
+    el('rect',{x:r.x*sx,y:r.y*sy,width:r.width*sx,height:r.height*sy,fill:'none',stroke:'#8fe6b0','stroke-width':1.5,'stroke-dasharray':'3 4','pointer-events':'none'});
+  }
+}
+setInterval(redraw,400);
+
+// ---- panel ----
+const P={};['selName','editBox','labTxt','px','py','pw','ph','geo','noteBox','noteTxt','animBox','animList','elList','out','aName','aTrig','aDur','aEase','aDesc'].forEach(id=>P[id]=document.getElementById(id));
+function geoText(selr){
+  const lr=liveRect(selr), rec=DB.elements[selr], pl=rec&&rec.plan;
+  let s='sel: '+selr;
+  if(lr) s+='\nexisting: '+lr.x.toFixed(1)+'%, '+lr.y.toFixed(1)+'% · '+lr.w.toFixed(1)+'×'+lr.h.toFixed(1)+'%';
+  if(pl) s+='\nplanned:  '+pl.x+'%, '+pl.y+'% · '+pl.w+'×'+pl.h+'%';
+  if(rec&&rec.applied) s+='\n(plan is APPLIED to live)';
+  return s;
+}
+function syncEdit(){
+  if(!sel){ P.editBox.style.display='none'; return; }
+  const rec=DB.elements[sel]; if(!rec) return;
+  P.editBox.style.display='block';
+  P.labTxt.value=rec.label;
+  const pl=planOf(sel)||{x:0,y:0,w:0,h:0};
+  P.px.value=pl.x; P.py.value=pl.y; P.pw.value=pl.w; P.ph.value=pl.h;
+  P.geo.textContent=geoText(sel);
+}
+function select(selr){
+  sel=selr;
+  if(!selr){ P.selName.textContent='— nothing selected —'; P.editBox.style.display='none'; P.noteBox.style.display='none'; P.animBox.style.display='none'; renderList(); redraw(); return; }
+  track(selr);
+  P.selName.textContent='▸ '+label(selr);
+  syncEdit();
+  P.noteBox.style.display='block'; P.noteTxt.value=(DB.elements[selr].notes||[]).join('\n');
+  P.animBox.style.display=(mode==='anim')?'block':'none';
+  renderAnims(); renderList(); redraw();
+}
+setInterval(()=>{ if(sel&&P.editBox.style.display==='block') P.geo.textContent=geoText(sel); },700);
+P.labTxt.addEventListener('input',()=>{ if(!sel)return; DB.elements[sel].label=P.labTxt.value||sel; save(); renderList(); redraw(); });
+;['px','py','pw','ph'].forEach(k=>P[k].addEventListener('input',()=>{
+  if(!sel)return; ensurePlan(sel); const pl=DB.elements[sel].plan;
+  pl.x=+P.px.value||0; pl.y=+P.py.value||0; pl.w=+P.pw.value||0; pl.h=+P.ph.value||0;
+  save(); redraw();
+}));
+P.noteTxt.addEventListener('input',()=>{ if(!sel)return; DB.elements[sel].notes=P.noteTxt.value.split('\n').filter(s=>s.trim()); save(); });
+document.getElementById('resetPlan').onclick=()=>{ if(!sel)return; DB.elements[sel].plan=null; save(); syncEdit(); redraw(); };
+// apply plan to the LIVE element / revert
+document.getElementById('applyLive').onclick=()=>{
+  if(!sel)return; const d=idoc(); let t; try{ t=d.querySelector(sel); }catch(e){}; if(!t)return;
+  const rec=DB.elements[sel], pl=planOf(sel); if(!pl)return;
+  if(!rec.applied) rec.applied={style:t.getAttribute('style')||''};
+  const W=d.documentElement.clientWidth,H=d.documentElement.clientHeight;
+  const cs=d.defaultView.getComputedStyle(t);
+  if(/absolute|fixed/.test(cs.position)){
+    let ox=0, oy=0;
+    if(cs.position==='absolute'&&t.offsetParent){ const pr=t.offsetParent.getBoundingClientRect(); ox=pr.x; oy=pr.y; }
+    t.style.left=(pl.x/100*W-ox)+'px'; t.style.top=(pl.y/100*H-oy)+'px'; t.style.right='auto'; t.style.bottom='auto';
+    t.style.width=(pl.w/100*W)+'px'; if(pl.h>0.5) t.style.height=(pl.h/100*H)+'px';
+  } else {
+    const lr=liveRect(sel);
+    t.style.transform=(t.style.transform||'').replace(/ ?translate\([^)]*\)/,'')+' translate('+((pl.x-lr.x)/100*W)+'px,'+((pl.y-lr.y)/100*H)+'px)';
+    t.style.width=(pl.w/100*W)+'px';
+  }
+  save(); redraw();
+};
+document.getElementById('revertLive').onclick=()=>{
+  if(!sel)return; const d=idoc(); let t; try{ t=d.querySelector(sel); }catch(e){}; if(!t)return;
+  const rec=DB.elements[sel];
+  if(rec.applied!==null&&rec.applied!==undefined){ t.setAttribute('style',rec.applied.style); rec.applied=null; save(); redraw(); }
+};
+function renderList(){
+  P.elList.innerHTML='';
+  const v=view();
+  Object.keys(DB.elements).forEach(selr=>{
+    const rec=DB.elements[selr];
+    const c=document.createElement('div'); c.className='chip'+(sel===selr?' on':'');
+    c.innerHTML='<span>'+(rec.view===v?'●':'○')+' '+label(selr)+'</span><span class="small">'+(rec.plan?'✥':'')+' '+(rec.notes.length?'✎'+rec.notes.length:'')+' '+(rec.anims.length?'◉'+rec.anims.length:'')+'</span><span class="x">×</span>';
+    c.onclick=e=>{ if(e.target.classList.contains('x')){ delete DB.elements[selr]; if(sel===selr)sel=null; save(); select(sel); return; } select(selr); };
+    P.elList.appendChild(c);
+  });
+}
+function renderAnims(){
+  P.animList.innerHTML='';
+  if(!sel) return;
+  (DB.elements[sel].anims||[]).forEach((a,i)=>{
+    const dv=document.createElement('div'); dv.className='anim';
+    dv.innerHTML='<span class="x">×</span><b>'+a.name+'</b> · '+a.trigger+' · '+a.dur+' · '+a.ease+(a.path?' · path('+a.path.length+')':'')+'<br>'+(a.desc||'')+' <button style="padding:1px 7px;font-size:10px;margin-top:3px">▶ preview</button>';
+    dv.querySelector('.x').onclick=()=>{ DB.elements[sel].anims.splice(i,1); save(); renderAnims(); redraw(); };
+    dv.querySelector('button').onclick=()=>preview(sel,a);
+    P.animList.appendChild(dv);
+  });
+}
+document.getElementById('aAdd').onclick=()=>{
+  if(!sel) return;
+  DB.elements[sel].anims.push({name:P.aName.value||'anim-'+(DB.elements[sel].anims.length+1),trigger:P.aTrig.value,dur:P.aDur.value||'1s',ease:P.aEase.value||'ease',desc:P.aDesc.value,path:pathForAnim});
+  pathForAnim=null; P.aName.value=P.aDur.value=P.aEase.value=P.aDesc.value='';
+  save(); renderAnims(); redraw();
+};
+document.getElementById('aPath').onclick=function(){ pathCapture=true; this.textContent='✏ drawing… (draw on stage)'; };
+function preview(selr,a){
+  const d=idoc(); let t; try{ t=d.querySelector(selr); }catch(e){}; if(!t) return;
+  const ms=(parseFloat(a.dur)||1)*(String(a.dur).includes('ms')?1:1000);
+  if(a.path&&a.path.length>1){
+    const W=d.documentElement.clientWidth,H=d.documentElement.clientHeight;
+    const px=a.path.map(p=>[p[0]/100*W,p[1]/100*H]), o=px[0];
+    const frames=px.map(p=>({transform:'translate('+(p[0]-o[0])+'px,'+(p[1]-o[1])+'px)'}));
+    t.animate(frames,{duration:ms,easing:a.ease==='friction'?'cubic-bezier(.17,.67,.36,.99)':(a.ease||'ease')});
+  } else {
+    t.animate([{transform:'scale(1)'},{transform:'scale(1.06)'},{transform:'scale(1)'}],{duration:ms,easing:'ease-in-out'});
+  }
+}
+
+// ---- modes / views ----
+document.querySelectorAll('.modes button').forEach(b=>b.onclick=()=>{
+  mode=b.dataset.m;
+  document.querySelectorAll('.modes button').forEach(x=>x.classList.toggle('on',x===b));
+  overlay.classList.toggle('browse',mode==='browse');
+  document.getElementById('drawTools').style.display=(mode==='draw')?'flex':'none';
+  P.animBox.style.display=(mode==='anim'&&sel)?'block':'none';
+  hoverEl=null; redraw();
+});
+document.querySelectorAll('#drawTools button').forEach(b=>b.onclick=()=>{
+  tool=b.dataset.t; document.querySelectorAll('#drawTools button').forEach(x=>x.classList.toggle('on',x===b));
+});
+document.getElementById('bpTog').onclick=function(){ document.body.classList.toggle('bp'); this.classList.toggle('on'); };
+
+// ---- pointer ----
+function siteElAt(e){
+  const d=idoc(); if(!d) return null;
+  const fb=overlay.getBoundingClientRect();
+  const sx=(d.documentElement.clientWidth||1)/fb.width, sy=(d.documentElement.clientHeight||1)/fb.height;
+  const t=d.elementFromPoint((e.clientX-fb.x)*sx,(e.clientY-fb.y)*sy);
+  return (t&&t!==d.body&&t!==d.documentElement)?t:null;
+}
+let drag=null, stroke=null;
+overlay.addEventListener('pointermove',e=>{
+  const fb=overlay.getBoundingClientRect();
+  if(drag){
+    const rec=DB.elements[drag.sel], pl=rec.plan;
+    const dx=(e.clientX-drag.px)/fb.width*100, dy=(e.clientY-drag.py)/fb.height*100;
+    if(drag.kind==='move'){ pl.x=Math.round((drag.o.x+dx)*2)/2; pl.y=Math.round((drag.o.y+dy)*2)/2; }
+    else { pl.w=Math.max(1,Math.round((drag.o.w+dx)*2)/2); pl.h=Math.max(1,Math.round((drag.o.h+dy)*2)/2); }
+    P.px.value=pl.x; P.py.value=pl.y; P.pw.value=pl.w; P.ph.value=pl.h;
+    redraw(); return;
+  }
+  if(stroke){ stroke.points.push(toPct(e.clientX-fb.x,e.clientY-fb.y)); redraw(); return; }
+  if(mode==='layout'||mode==='note'||mode==='anim'){ hoverEl=siteElAt(e); redraw(); }
+});
+overlay.addEventListener('pointerdown',e=>{
+  const fb=overlay.getBoundingClientRect();
+  if(mode==='draw'||pathCapture){
+    if(tool==='erase'&&!pathCapture){
+      const v=view(), pt=toPct(e.clientX-fb.x,e.clientY-fb.y);
+      DB.drawings[v]=(DB.drawings[v]||[]).filter(s=>!s.points.some(p=>Math.hypot(p[0]-pt[0],p[1]-pt[1])<3));
+      save(); redraw(); return;
+    }
+    stroke={tool:pathCapture?'pen':tool,color:pathCapture?'#a8f5cf':'#7fdfff',points:[toPct(e.clientX-fb.x,e.clientY-fb.y)]};
+    overlay.setPointerCapture(e.pointerId); return;
+  }
+  const grip=e.target.closest&&e.target.closest('[data-grip]');
+  const planbox=e.target.closest&&e.target.closest('[data-plan]');
+  const exist=e.target.closest&&e.target.closest('[data-sel]');
+  if(grip){ const selr=grip.getAttribute('data-grip'); select(selr); ensurePlan(selr);
+    drag={sel:selr,kind:'size',px:e.clientX,py:e.clientY,o:Object.assign({},DB.elements[selr].plan)};
+    overlay.setPointerCapture(e.pointerId); return; }
+  if(planbox){ const selr=planbox.getAttribute('data-plan'); select(selr); ensurePlan(selr);
+    if(mode==='layout'||mode==='browse'){ drag={sel:selr,kind:'move',px:e.clientX,py:e.clientY,o:Object.assign({},DB.elements[selr].plan)};
+      overlay.setPointerCapture(e.pointerId); } return; }
+  if(exist){ const selr=exist.getAttribute('data-sel'); select(selr); if(mode==='layout') ensurePlan(selr); redraw(); return; }
+  // free pick from the live DOM
+  const t=siteElAt(e);
+  if(!t){ select(null); return; }
+  const selr=cssPath(t);
+  select(selr);
+  if(mode==='layout'){ ensurePlan(selr); const rec=DB.elements[selr];
+    drag={sel:selr,kind:'move',px:e.clientX,py:e.clientY,o:Object.assign({},rec.plan)};
+    overlay.setPointerCapture(e.pointerId); }
+});
+overlay.addEventListener('pointerup',()=>{
+  if(drag){ save(); syncEdit(); drag=null; }
+  if(stroke){
+    if(pathCapture){ pathForAnim=stroke.points; pathCapture=false; const b=document.getElementById('aPath'); b.textContent='✓ path captured ('+stroke.points.length+' pts)'; setTimeout(()=>b.textContent='✏ draw motion path',1800); }
+    else { const v=view(); (DB.drawings[v]=DB.drawings[v]||[]).push(stroke); }
+    stroke=null; save(); redraw();
+  }
+});
+
+// ---- exports ----
+function aiHandoff(){
+  const d=idoc(), W=d?d.documentElement.clientWidth:1600, H=d?d.documentElement.clientHeight:1000;
+  const L=[];
+  L.push('# SITE BLUEPRINT — AI HANDOFF (v2)');
+  L.push('Read docs/BLUEPRINT-README.md for schema + apply rules. Site: '+SITE+' · viewport '+W+'x'+H);
+  L.push('EXISTING = where the element is in the live code today. PLANNED = where the designer wants it. Apply = make PLANNED real, in the element\'s own CSS system.');
+  for(const selr in DB.elements){
+    const rec=DB.elements[selr], lr=liveRect(selr), pl=rec.plan;
+    L.push('\n## '+rec.label+'  ('+selr+')  · view:'+rec.view);
+    if(lr) L.push('existing: left '+lr.x.toFixed(1)+'% · top '+lr.y.toFixed(1)+'% · w '+lr.w.toFixed(1)+'% · h '+lr.h.toFixed(1)+'%');
+    if(pl) L.push('PLANNED:  left '+pl.x+'% · top '+pl.y+'% · w '+pl.w+'% · h '+pl.h+'%');
+    (rec.notes||[]).forEach(n=>L.push('- NOTE: '+n));
+    (rec.anims||[]).forEach(a=>{ L.push('- ANIMATION "'+a.name+'": trigger='+a.trigger+' duration='+a.dur+' easing='+a.ease+(a.desc?' — '+a.desc:''));
+      if(a.path) L.push('  motion-path (viewport %): '+JSON.stringify(a.path)); });
+  }
+  const dr=[]; for(const v in DB.drawings) if((DB.drawings[v]||[]).length) dr.push(v+': '+DB.drawings[v].length+' strokes');
+  if(dr.length) L.push('\n## freehand drawings — '+dr.join(' · ')+' (coords in JSON)');
+  L.push('\n## RAW JSON (authoritative)');
+  L.push(JSON.stringify(DB));
+  return L.join('\n');
+}
+function cssOut(){
+  const out=['/* blueprint PLANNED rects — fold into each element\'s own CSS system */'];
+  for(const selr in DB.elements){ const rec=DB.elements[selr], pl=rec.plan; if(!pl) continue;
+    out.push((rec.view&&rec.view!=='default'&&rec.view!=='?'?'body[data-view="'+rec.view+'"] ':'')+selr+'{left:'+pl.x+'%;top:'+pl.y+'%;width:'+pl.w+'%}'); }
+  return out.join('\n');
+}
+document.getElementById('exportAI').onclick=function(){ P.out.value=aiHandoff(); navigator.clipboard.writeText(P.out.value); this.textContent='✓ Copied'; setTimeout(()=>this.textContent='⧉ Copy AI HANDOFF spec',1300); };
+document.getElementById('exportJSON').onclick=()=>{ P.out.value=JSON.stringify(DB,null,1);
+  const b=new Blob([P.out.value],{type:'application/json'}), a=document.createElement('a');
+  a.href=URL.createObjectURL(b); a.download='blueprint-data.json'; a.click(); };
+document.getElementById('copyCSS').onclick=function(){ P.out.value=cssOut(); navigator.clipboard.writeText(P.out.value); };
+document.getElementById('clearAll').onclick=()=>{ if(confirm('Wipe all blueprint data for '+SITE+'?')){ DB={version:2,site:SITE,elements:{},drawings:{}}; save(); sel=null; select(null); } };
+
+iframe.addEventListener('load',()=>{ setTimeout(()=>{
+  // seed the demo page with a few tracked elements so the tool shows something out of the box
+  if(!Object.keys(DB.elements).length&&SITE===TARGET){ ['#hero','#card-1','#card-2','#cta'].forEach(track); }
+  renderList(); redraw();
+},1200); });
+renderList();
+</script>
+</body></html>

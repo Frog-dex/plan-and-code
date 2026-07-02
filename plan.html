@@ -1,0 +1,149 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Plan &amp; Code — 3D Floor Plan</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#08131f;color:#bfe6ff;font-family:'Courier New',ui-monospace,monospace;overflow:hidden}
+#wrap{display:flex;height:100%}
+#stage{flex:1;position:relative}
+#plan{width:100%;height:100%;display:block;touch-action:none}
+#panel{width:308px;background:#0c1a29;border-left:1px solid #17384f;padding:14px 16px;display:flex;flex-direction:column;gap:9px;overflow:auto}
+h1{font-size:15px;letter-spacing:.16em;color:#7fdfff;margin:0 0 2px;text-transform:uppercase}
+.sub{font-size:11px;color:#5f8ba6;margin:0 0 6px;letter-spacing:.04em}
+.sel{font-size:13px;color:#f0dca0;letter-spacing:.1em}
+label{font-size:11px;color:#7fb0c8;display:block;margin:7px 0 2px;letter-spacing:.06em}
+input[type=range]{width:100%;accent-color:#7fdfff}
+input[type=number],select{width:100%;background:#08131f;color:#bfe6ff;border:1px solid #1d4763;border-radius:5px;padding:5px 7px;font-family:inherit;font-size:12px}
+.row{display:flex;gap:8px}.row>div{flex:1}
+button{background:#12314a;color:#bfe6ff;border:1px solid #2b6a92;border-radius:6px;padding:8px 10px;font-family:inherit;font-size:12px;letter-spacing:.06em;cursor:pointer;margin-top:6px}
+button:hover{background:#184260}
+button.primary{background:#134b39;border-color:#2f8a63;color:#a8f5cf}
+textarea{width:100%;height:120px;background:#050d16;color:#8fd6a8;border:1px solid #1d4763;border-radius:6px;font-family:inherit;font-size:10px;padding:8px;resize:vertical}
+.hint{font-size:10.5px;color:#5f8ba6;line-height:1.5}
+.key{font-size:10.5px;color:#7fb0c8}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin:0 4px 0 8px;vertical-align:middle}
+</style></head>
+<body>
+<div id="wrap">
+  <div id="stage"><svg id="plan"></svg></div>
+  <div id="panel">
+    <div><h1>3D Floor Plan</h1><p class="sub">top-down · drag to place · drag ◉ to move camera</p></div>
+    <div class="sel" id="selName">— nothing selected —</div>
+    <div id="controls" style="display:none">
+      <div class="row"><div><label>X</label><input type="number" id="cx" step="5"></div><div><label>Z (depth)</label><input type="number" id="cz" step="5"></div></div>
+      <div id="itemOnly">
+        <label>Rotation — <span id="rotVal">0</span>°</label>
+        <input type="range" id="crot" min="0" max="359" step="5">
+        <div class="row"><div><label>Height</label><input type="number" id="ch" step="5"></div><div><label>Mount on</label>
+          <select id="con"><option value="floor">Floor</option><option value="table">Table top</option><option value="ceiling">Ceiling</option></select></div></div>
+        <label style="margin-top:6px"><input type="checkbox" id="cspin" style="width:auto;accent-color:#7fdfff"> spin (item swivels in 3D)</label>
+      </div>
+    </div>
+    <div class="key"><span class="sw" style="background:#7fdfff"></span>floor<span class="sw" style="background:#8fe6b0"></span>table<span class="sw" style="background:#c9a0ff"></span>ceiling<span class="sw" style="background:#ffb060"></span>spin<span class="sw" style="background:#ff7f6a"></span>hero</div>
+    <button class="primary" id="copy">⧉ Copy layout code</button>
+    <div class="hint">Drag objects on the plan. Click one to rotate / resize / pick its mount plane. Drag the gold ◉ to move where the camera ends up. The code below is the exact <b>layout.js</b>.</div>
+    <textarea id="out" spellcheck="false"></textarea>
+  </div>
+</div>
+<script type="module">
+import { ROOM, ITEMS } from './models/layout.js';
+const SVG='http://www.w3.org/2000/svg';
+const svg=document.getElementById('plan');
+const items=ITEMS.map(o=>Object.assign({},o));      // working copies
+const room=Object.assign({},ROOM);
+let sel=null;
+const MOUNTCOL={floor:'#7fdfff',table:'#8fe6b0',ceiling:'#c9a0ff'};
+
+const PAD=90, x0=ROOM.minX-PAD, y0=ROOM.minZ-PAD, W=(ROOM.maxX-ROOM.minX)+2*PAD, H=(ROOM.maxZ-ROOM.minZ)+2*PAD;
+svg.setAttribute('viewBox',`${x0} ${y0} ${W} ${H}`);
+svg.setAttribute('preserveAspectRatio','xMidYMid meet');
+function el(tag,attrs,parent){ const e=document.createElementNS(SVG,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); (parent||svg).appendChild(e); return e; }
+
+// ---- static backdrop: faint grid + walls + compass ----
+const bg=el('g',{});
+el('rect',{x:x0,y:y0,width:W,height:H,fill:'#08131f'},bg);
+for(let gx=Math.ceil(ROOM.minX/100)*100; gx<=ROOM.maxX; gx+=100) el('line',{x1:gx,y1:ROOM.minZ,x2:gx,y2:ROOM.maxZ,stroke:gx===0?'#1d4763':'#102a3d','stroke-width':gx===0?2:1},bg);
+for(let gz=Math.ceil(ROOM.minZ/100)*100; gz<=ROOM.maxZ; gz+=100) el('line',{x1:ROOM.minX,y1:gz,x2:ROOM.maxX,y2:gz,stroke:gz===0?'#1d4763':'#102a3d','stroke-width':gz===0?2:1},bg);
+el('rect',{x:ROOM.minX,y:ROOM.minZ,width:ROOM.maxX-ROOM.minX,height:ROOM.maxZ-ROOM.minZ,fill:'none',stroke:'#7fdfff','stroke-width':5},bg);
+el('text',{x:0,y:ROOM.minZ-34,fill:'#4f7f98','font-size':26,'text-anchor':'middle','letter-spacing':4},bg).textContent='BACK WALL';
+el('circle',{cx:0,cy:-120,r:70,fill:'none',stroke:'#284a3c','stroke-width':2},bg);
+el('circle',{cx:0,cy:-120,r:30,fill:'none',stroke:'#284a3c','stroke-width':2},bg);
+
+// ---- dynamic layer: camera + items ----
+const layer=el('g',{});
+function draw(){
+  layer.innerHTML='';
+  // camera (draggable)
+  const cg=el('g',{'data-cam':'1',style:'cursor:grab'},layer);
+  el('polygon',{points:`${room.camX},${room.camZ} ${ROOM.minX*0.92},${ROOM.minZ} ${ROOM.maxX*0.92},${ROOM.minZ}`,fill:'#f0dca0','fill-opacity':0.045,stroke:'#5f4a24','stroke-width':1.2,'stroke-dasharray':'10 10'},cg);
+  el('circle',{cx:room.camX,cy:room.camZ,r:17,fill:'#f0dca0',stroke:sel==='__cam'?'#fff':'#7a5f2a','stroke-width':sel==='__cam'?4:2},cg);
+  el('text',{x:room.camX,y:room.camZ+44,fill:'#c9a86a','font-size':22,'text-anchor':'middle'},cg).textContent='CAMERA';
+  // items
+  items.forEach(it=>{
+    const isSel=sel===it.id;
+    const col = it.hero?'#ff7f6a' : it.spin?'#ffb060' : (MOUNTCOL[it.on]||'#7fdfff');
+    const g=el('g',{transform:`translate(${it.x},${it.z}) rotate(${it.rot})`,'data-id':it.id,style:'cursor:grab'},layer);
+    const w=it.foot[0],d=it.foot[1];
+    el('rect',{x:-w/2,y:-d/2,width:w,height:d,rx:6,fill:col,'fill-opacity':isSel?0.34:0.15,stroke:isSel?'#f0dca0':col,'stroke-width':isSel?5:3},g);
+    el('line',{x1:0,y1:0,x2:0,y2:-(d/2+22),stroke:col,'stroke-width':3},g);
+    el('polygon',{points:`0,${-(d/2+34)} -8,${-(d/2+18)} 8,${-(d/2+18)}`,fill:col},g);
+    const lab=el('g',{transform:`rotate(${-it.rot})`},g);
+    el('text',{x:0,y:5,fill:'#eaf6ff','font-size':21,'text-anchor':'middle','font-weight':'bold'},lab).textContent=it.id;
+    el('text',{x:w/2-4,y:-d/2+17,fill:col,'font-size':15,'text-anchor':'end',opacity:0.85},lab).textContent=(it.on||'floor')[0].toUpperCase();
+    if(isSel) el('text',{x:0,y:d/2+27,fill:'#cfe8f5','font-size':15,'text-anchor':'middle'},lab).textContent=`${it.x|0}, ${it.z|0} · ${it.rot}° · ${it.on}`;
+  });
+}
+function fmt(){
+  const lines=items.map(it=>{
+    const p=[`id:'${it.id}'`,`model:'${it.model}'`,`on:'${it.on}'`,`x:${it.x|0}`,`z:${it.z|0}`,`rot:${it.rot|0}`,`h:${it.h|0}`,`foot:[${it.foot[0]},${it.foot[1]}]`];
+    if(it.spin)p.push('spin:true'); if(it.hero)p.push('hero:true');
+    return '  { '+p.join(', ')+' }';
+  });
+  return `// camera → camX:${room.camX|0}, camZ:${room.camZ|0}\nexport const ITEMS = [\n`+lines.join(',\n')+'\n];';
+}
+const out=document.getElementById('out');
+function refresh(){ draw(); out.value=fmt(); }
+window.getLayout=()=>items; window.getCam=()=>({camX:room.camX,camZ:room.camZ}); window.layoutCode=fmt;
+
+// ---- panel ----
+const C={name:document.getElementById('selName'),box:document.getElementById('controls'),itemOnly:document.getElementById('itemOnly'),
+  x:document.getElementById('cx'),z:document.getElementById('cz'),rot:document.getElementById('crot'),
+  rotv:document.getElementById('rotVal'),h:document.getElementById('ch'),on:document.getElementById('con'),spin:document.getElementById('cspin')};
+function select(id){
+  sel=id;
+  if(id==='__cam'){ C.box.style.display='block'; C.itemOnly.style.display='none'; C.name.textContent='◉ CAMERA'; C.x.value=room.camX|0; C.z.value=room.camZ|0; refresh(); return; }
+  const it=items.find(o=>o.id===id);
+  if(!it){ C.box.style.display='none'; C.name.textContent='— nothing selected —'; refresh(); return; }
+  C.box.style.display='block'; C.itemOnly.style.display='block'; C.name.textContent='▸ '+id;
+  C.x.value=it.x|0; C.z.value=it.z|0; C.rot.value=it.rot; C.rotv.textContent=it.rot; C.h.value=it.h|0; C.on.value=it.on; C.spin.checked=!!it.spin;
+  refresh();
+}
+function setXZ(nx,nz){ if(sel==='__cam'){ room.camX=nx; room.camZ=nz; } else { const it=items.find(o=>o.id===sel); if(it){it.x=nx;it.z=nz;} } refresh(); }
+function updItem(k,v){ const it=items.find(o=>o.id===sel); if(!it)return; it[k]=v; refresh(); }
+C.x.oninput=e=>setXZ(+e.target.value, sel==='__cam'?room.camZ:(items.find(o=>o.id===sel)||{}).z);
+C.z.oninput=e=>setXZ(sel==='__cam'?room.camX:(items.find(o=>o.id===sel)||{}).x, +e.target.value);
+C.h.oninput=e=>updItem('h',+e.target.value); C.on.onchange=e=>updItem('on',e.target.value);
+C.rot.oninput=e=>{ C.rotv.textContent=e.target.value; updItem('rot',+e.target.value); };
+C.spin.onchange=e=>updItem('spin',e.target.checked);
+document.getElementById('copy').onclick=()=>{ navigator.clipboard.writeText(fmt()); const b=document.getElementById('copy'); b.textContent='✓ Copied'; setTimeout(()=>b.textContent='⧉ Copy layout code',1200); };
+
+// ---- drag (items + camera) ----
+let drag=null;
+function toUser(e){ const p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); }
+svg.addEventListener('pointerdown',e=>{
+  const cam=e.target.closest('[data-cam]'), g=e.target.closest('[data-id]'), u=toUser(e);
+  if(cam){ select('__cam'); drag={cam:true,dx:room.camX-u.x,dz:room.camZ-u.y}; svg.setPointerCapture(e.pointerId); return; }
+  if(!g){ select(null); return; }
+  const id=g.getAttribute('data-id'); select(id); const it=items.find(o=>o.id===id);
+  drag={id,dx:it.x-u.x,dz:it.z-u.y}; svg.setPointerCapture(e.pointerId);
+});
+svg.addEventListener('pointermove',e=>{ if(!drag)return; const u=toUser(e);
+  const nx=Math.round((u.x+drag.dx)/5)*5, nz=Math.round((u.y+drag.dz)/5)*5;
+  if(drag.cam){ room.camX=nx; room.camZ=nz; C.x.value=nx; C.z.value=nz; }
+  else { const it=items.find(o=>o.id===drag.id); it.x=nx; it.z=nz; C.x.value=nx; C.z.value=nz; }
+  refresh();
+});
+svg.addEventListener('pointerup',()=>{ drag=null; });
+
+refresh();
+</script>
+</body></html>

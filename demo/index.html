@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aurora Coffee — demo target page</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#faf6f0;color:#3b2f26;font-family:Georgia,'Times New Roman',serif;min-height:100vh}
+.topbar{display:flex;align-items:center;gap:24px;padding:14px 32px;background:#2c211a;color:#f3e8d8}
+.topbar .logo{font-size:20px;letter-spacing:.14em;font-weight:bold}
+.topbar nav a{color:#cbb79b;text-decoration:none;margin-right:18px;font-size:14px}
+#hero{padding:64px 32px 48px;text-align:center;background:linear-gradient(#f3e8d8,#faf6f0)}
+#heroTitle{font-size:42px;margin:0 0 10px;letter-spacing:.03em}
+#hero p{margin:0 0 24px;color:#7a6a58;font-size:17px}
+#cta{background:#b0502a;color:#fff;border:0;border-radius:6px;padding:13px 34px;font-size:16px;font-family:inherit;cursor:pointer}
+#cta:hover{background:#93401f}
+#gallery{display:flex;gap:28px;justify-content:center;padding:36px 32px 56px;flex-wrap:wrap}
+.card{width:260px;background:#fff;border:1px solid #e4d8c6;border-radius:10px;overflow:hidden;box-shadow:0 3px 10px rgba(60,40,20,.08)}
+.card svg{display:block;width:100%;height:150px}
+.card h3{margin:14px 16px 4px;font-size:18px}
+.card p{margin:0 16px 16px;font-size:13.5px;color:#7a6a58;line-height:1.5}
+#badge{position:fixed;right:22px;top:78px;background:#b0502a;color:#fff;font-size:12px;letter-spacing:.12em;padding:7px 13px;border-radius:99px;box-shadow:0 3px 8px rgba(60,40,20,.3)}
+#foot{padding:22px 32px;background:#2c211a;color:#a8977f;font-size:12.5px;text-align:center}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <span class="logo">AURORA COFFEE</span>
+  <nav><a href="#">Beans</a><a href="#">Brew guides</a><a href="#">About</a></nav>
+</header>
+
+<div id="badge">NEW ROAST</div>
+
+<section id="hero">
+  <h1 id="heroTitle">Small-batch beans, roasted weekly</h1>
+  <p>A fake little storefront that exists only so you can plan its redesign.</p>
+  <button id="cta">Order a bag</button>
+</section>
+
+<section id="gallery">
+  <div class="card" id="card-1">
+    <svg viewBox="0 0 260 150" xmlns="http://www.w3.org/2000/svg">
+      <rect width="260" height="150" fill="#e8d3b8"/>
+      <circle cx="130" cy="82" r="44" fill="#6f4a2f"/>
+      <ellipse cx="130" cy="82" rx="10" ry="34" fill="#4a3020" transform="rotate(24 130 82)"/>
+      <text x="130" y="26" text-anchor="middle" font-size="13" fill="#7a5a3a" font-family="Georgia">house blend</text>
+    </svg>
+    <h3>House Blend</h3>
+    <p>Chocolate, cherry, and a lazy Sunday. Our workhorse roast.</p>
+  </div>
+  <div class="card" id="card-2">
+    <svg viewBox="0 0 260 150" xmlns="http://www.w3.org/2000/svg">
+      <rect width="260" height="150" fill="#cfd8c8"/>
+      <path d="M85 118 Q130 20 175 118 Z" fill="#5d7350"/>
+      <circle cx="130" cy="64" r="14" fill="#f3e8d8"/>
+      <text x="130" y="26" text-anchor="middle" font-size="13" fill="#5d7350" font-family="Georgia">single origin</text>
+    </svg>
+    <h3>Highland Single Origin</h3>
+    <p>Bright, floral, slightly smug. Rotates with the seasons.</p>
+  </div>
+</section>
+
+<footer id="foot">© Aurora Coffee — a demo target page for the Plan &amp; Code blueprint tool.</footer>
+</body>
+</html>
