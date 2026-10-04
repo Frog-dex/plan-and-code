@@ -1,5 +1,7 @@
 # Plan & Code
 
+<img src="docs/box.jpg" width="260" align="right" alt="Plan & Code box art">
+
 Visual planning tools for handing design intent to AI coding agents — zero dependencies, zero build, plain HTML files.
 
 You browse your real site, drag gold "planned" boxes where things *should* go, scribble notes and motion paths, then hit one button: **Copy AI HANDOFF spec**. The result is a self-contained text spec (existing vs planned geometry, notes, animation specs, raw JSON) that any AI coding agent can read and apply to your codebase. Plan visually, let the AI write the code.
@@ -40,7 +42,7 @@ You browse your real site, drag gold "planned" boxes where things *should* go, s
 No install, no build. Just serve the folder (a server is required — the iframe and ES-module import don't work over `file://`):
 
 ```bash
-git clone https://github.com/moomoomoo6969/plan-and-code.git
+git clone https://github.com/Frog-dex/plan-and-code.git
 cd plan-and-code
 python3 -m http.server 8080
 ```
@@ -81,8 +83,20 @@ No screenshots are bundled yet. The fastest tour is the Quick Start above — th
 ## Publish
 
 ```bash
-gh repo create moomoomoo6969/plan-and-code --public --source . --push
+gh repo create Frog-dex/plan-and-code --public --source . --push
 ```
+
+## The Sovereign Software shelf
+
+Every box on the Spirit Strikers software shelf. Put the discs in the terminal here: https://frog-dex.github.io/terrace-world/library.html#software
+
+| <a href="https://github.com/Frog-dex/terrace-world"><img src="docs/shelf/terrace-world.jpg" width="150" alt="Terrace World box"></a> | <img src="docs/shelf/snowberry-os.jpg" width="150" alt="Snowberry OS box"> | <img src="docs/shelf/lizard-widget.jpg" width="150" alt="Lizard Widget box"> | <img src="docs/shelf/frog-widget.jpg" width="150" alt="Frog Widget box"> |
+|:--:|:--:|:--:|:--:|
+| **Terrace World**<br>the game | **Snowberry OS**<br>early build, not released yet | **Lizard Widget**<br>add-on, not released yet | **Frog Widget**<br>add-on, not released yet |
+
+| <a href="https://github.com/Frog-dex/3d-models-pack"><img src="docs/shelf/models-pack.jpg" width="150" alt="3D Models Pack box"></a> | <a href="https://github.com/Frog-dex/plan-and-code"><img src="docs/shelf/plan-and-code.jpg" width="150" alt="Plan & Code box"></a> | <a href="https://github.com/Frog-dex/krita-agent"><img src="docs/shelf/krita-agent.jpg" width="150" alt="Krita Agent box"></a> | <a href="https://github.com/Frog-dex/card-forge"><img src="docs/shelf/card-forge.jpg" width="150" alt="Card Forge box"></a> |
+|:--:|:--:|:--:|:--:|
+| **3D Models Pack**<br>thirteen free models | **Plan & Code**<br>plan a page, hand it to an AI | **Krita Agent**<br>AI tools inside Krita | **Card Forge**<br>card-making studio |
 
 ## License
 
