@@ -9,11 +9,13 @@ asked to apply a blueprint. Read this fully before touching the target site. Fol
 |---|---|
 | `blueprint.html` | Planning tool. Loads the target page in a same-origin iframe, overlays existing/planned outlines, notes, animation specs, and freehand drawings. Persists to `localStorage`, exports the JSON below. |
 | `demo/index.html` | Sample target page ("Aurora Coffee") used by default. |
+| `demo/shelf.html` | Second sample target page with two views (`data-view="shelf"` / `"terminal"`). |
 | `plan.html` | Separate top-down floor-plan editor for 3D scenes (emits `models/layout.js`). Not part of the blueprint schema. |
 | `docs/BLUEPRINT-README.md` | This spec. |
 
 - The tool can plan ANY same-origin page: `blueprint.html?page=<your-page>.html`.
 - Data is stored per target page under localStorage key `plan-and-code-blueprint-v2:<page>`.
+- A downloaded JSON file (same schema as below) can be loaded back with the panel's **⇑ load** button.
 - Local preview: `python3 -m http.server 8080` → http://localhost:8080/blueprint.html
 
 ## Blueprint JSON schema (v2)

@@ -44,6 +44,23 @@ hr{border:0;border-top:1px solid #17384f;margin:4px 0;width:100%}
 svg text{user-select:none}
 .legend{font-size:10px;color:#7fb0c8}
 .legend i{display:inline-block;width:14px;height:3px;margin:0 4px 2px 8px;vertical-align:middle}
+.top{display:flex;align-items:center;gap:8px}
+.top h1{flex:1}
+.home{color:#7fb0c8;text-decoration:none;font-size:11px;border:1px solid #1d4763;border-radius:5px;padding:3px 7px}
+.home:hover{color:#f0dca0;border-color:#f0dca0}
+.keys{font-size:10px;color:#5f8ba6;line-height:1.6}
+.keys kbd{font-family:inherit;background:#0a2036;border:1px solid #1d4763;border-radius:3px;padding:0 4px;color:#bfe6ff}
+#toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#134b39;border:1px solid #2f8a63;color:#a8f5cf;padding:7px 14px;border-radius:6px;font-size:12px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
+#toast.show{opacity:1}
+button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid #f0dca0;outline-offset:1px}
+@media (max-width:760px){
+  html,body{overflow:auto;height:auto}
+  #wrap{flex-direction:column;height:auto}
+  #stagewrap{flex:none;height:62vh;padding:6px}
+  #panel{width:auto;border-left:0;border-top:1px solid #17384f;overflow:visible}
+  button{padding:9px 8px}
+  .keys{display:none}
+}
 </style></head>
 <body class="bp">
 <div id="wrap">
@@ -53,7 +70,12 @@ svg text{user-select:none}
     <svg id="overlay" class="browse"></svg>
   </div></div>
   <div id="panel">
-    <h1>Site Blueprint</h1>
+    <div class="top"><h1>Site Blueprint</h1><a class="home" href="./index.html" title="Plan &amp; Code home">⌂ home</a></div>
+    <label for="pagePick" style="margin-top:0">Target page</label>
+    <select id="pagePick">
+      <option value="./demo/index.html">demo · Aurora Coffee</option>
+      <option value="./demo/shelf.html">demo · Software Shelf (multi-view)</option>
+    </select>
     <p class="sub">the real site runs inside. cyan = existing area · gold = planned area. Saves locally + exports for AI handoff.</p>
     <div class="row"><button id="bpTog" class="on">▦ Blueprint</button></div>
     <div class="modes">
@@ -91,11 +113,14 @@ svg text{user-select:none}
     <div id="elList" class="list"></div>
     <hr>
     <button class="on" id="exportAI">⧉ Copy AI HANDOFF spec</button>
-    <div class="row"><button id="exportJSON">⇓ JSON</button><button id="copyCSS">⧉ CSS</button><button id="clearAll" class="warn">✕ wipe</button></div>
+    <div class="row"><button id="exportJSON">⇓ JSON</button><button id="importJSON">⇑ load</button><button id="copyCSS">⧉ CSS</button><button id="clearAll" class="warn">✕ wipe</button></div>
+    <input type="file" id="importFile" accept="application/json,.json" hidden>
     <textarea id="out" spellcheck="false" placeholder="export appears here"></textarea>
     <div class="small">Spec: <b>docs/BLUEPRINT-README.md</b>. Any same-origin page: <b>blueprint.html?page=your-page.html</b>. Future AI: read the spec, then apply the JSON.</div>
+    <div class="keys"><kbd>1</kbd>–<kbd>5</kbd> modes · <kbd>←↑↓→</kbd> nudge plan 0.5% (<kbd>shift</kbd> 5%) · <kbd>Esc</kbd> deselect / cancel</div>
   </div>
 </div>
+<div id="toast" role="status" aria-live="polite"></div>
 <script>
 const SVGNS='http://www.w3.org/2000/svg';
 const iframe=document.getElementById('site'), overlay=document.getElementById('overlay');
@@ -106,10 +131,37 @@ const KEY='plan-and-code-blueprint-v2:'+SITE;
 // Optional friendly names for selectors on YOUR target page (label shown instead of the raw selector).
 const KNOWN={
   '.topbar':'top-bar','#hero':'hero','#heroTitle':'hero-title','#cta':'cta-button',
-  '#card-1':'card-one','#card-2':'card-two','#gallery':'gallery','#badge':'badge','#foot':'footer'
+  '#card-1':'card-one','#card-2':'card-two','#gallery':'gallery','#badge':'badge','#foot':'footer',
+  // demo/shelf.html
+  '#shelfHero':'shelf-hero','#rack':'box-rack','#terminal':'disc-terminal','#viewTabs':'view-tabs'
 };
-let DB=JSON.parse(localStorage.getItem(KEY)||'null')||{version:2,site:SITE,elements:{},drawings:{}};
-function save(){ localStorage.setItem(KEY,JSON.stringify(DB)); }
+const DEMOS=['./demo/index.html','./demo/shelf.html'];   // pages that get seeded with a few tracked elements
+const blank=()=>({version:2,site:SITE,elements:{},drawings:{}});
+// normalise anything loaded from storage / an imported file into a valid v2 DB
+function normalise(o){
+  const db=blank();
+  if(!o||typeof o!=='object') return db;
+  if(o.drawings&&typeof o.drawings==='object') for(const v in o.drawings) if(Array.isArray(o.drawings[v])) db.drawings[v]=o.drawings[v];
+  if(o.elements&&typeof o.elements==='object') for(const k in o.elements){ const r=o.elements[k]||{};
+    db.elements[k]={label:String(r.label||k),view:r.view||'default',plan:r.plan||null,notes:Array.isArray(r.notes)?r.notes:[],anims:Array.isArray(r.anims)?r.anims:[],applied:null}; }
+  return db;
+}
+function load(){ try{ return normalise(JSON.parse(localStorage.getItem(KEY)||'null')); }catch(e){ return blank(); } }
+let DB=load();
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(DB)); }catch(e){ toast('⚠ could not save (storage full or blocked)'); } }
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let toastT=0;
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),1600); }
+// clipboard with a fallback for non-secure contexts / denied permission
+function copyText(txt){
+  const fallback=()=>{ P.out.focus(); P.out.select(); let ok=false; try{ ok=document.execCommand('copy'); }catch(e){} toast(ok?'✓ copied':'select the export box and copy it manually'); };
+  if(navigator.clipboard&&window.isSecureContext) navigator.clipboard.writeText(txt).then(()=>toast('✓ copied to clipboard'),fallback);
+  else fallback();
+}
+const pick=document.getElementById('pagePick');
+if(![...pick.options].some(o=>o.value===SITE)){ const o=document.createElement('option'); o.value=SITE; o.textContent=SITE; pick.appendChild(o); }
+pick.value=SITE;
+pick.onchange=()=>{ location.search='?page='+encodeURIComponent(pick.value); };
 let mode='browse', tool='pen', sel=null, hoverEl=null, pathForAnim=null, pathCapture=false;
 
 const idoc=()=>{ try{ return iframe.contentDocument; }catch(e){ return null; } };
@@ -251,7 +303,7 @@ document.getElementById('applyLive').onclick=()=>{
     t.style.left=(pl.x/100*W-ox)+'px'; t.style.top=(pl.y/100*H-oy)+'px'; t.style.right='auto'; t.style.bottom='auto';
     t.style.width=(pl.w/100*W)+'px'; if(pl.h>0.5) t.style.height=(pl.h/100*H)+'px';
   } else {
-    const lr=liveRect(sel);
+    const lr=liveRect(sel); if(!lr){ toast('element is hidden — cannot preview'); return; }
     t.style.transform=(t.style.transform||'').replace(/ ?translate\([^)]*\)/,'')+' translate('+((pl.x-lr.x)/100*W)+'px,'+((pl.y-lr.y)/100*H)+'px)';
     t.style.width=(pl.w/100*W)+'px';
   }
@@ -268,7 +320,7 @@ function renderList(){
   Object.keys(DB.elements).forEach(selr=>{
     const rec=DB.elements[selr];
     const c=document.createElement('div'); c.className='chip'+(sel===selr?' on':'');
-    c.innerHTML='<span>'+(rec.view===v?'●':'○')+' '+label(selr)+'</span><span class="small">'+(rec.plan?'✥':'')+' '+(rec.notes.length?'✎'+rec.notes.length:'')+' '+(rec.anims.length?'◉'+rec.anims.length:'')+'</span><span class="x">×</span>';
+    c.innerHTML='<span>'+(rec.view===v?'●':'○')+' '+esc(label(selr))+'</span><span class="small">'+(rec.plan?'✥':'')+' '+(rec.notes.length?'✎'+rec.notes.length:'')+' '+(rec.anims.length?'◉'+rec.anims.length:'')+'</span><span class="x">×</span>';
     c.onclick=e=>{ if(e.target.classList.contains('x')){ delete DB.elements[selr]; if(sel===selr)sel=null; save(); select(sel); return; } select(selr); };
     P.elList.appendChild(c);
   });
@@ -278,7 +330,7 @@ function renderAnims(){
   if(!sel) return;
   (DB.elements[sel].anims||[]).forEach((a,i)=>{
     const dv=document.createElement('div'); dv.className='anim';
-    dv.innerHTML='<span class="x">×</span><b>'+a.name+'</b> · '+a.trigger+' · '+a.dur+' · '+a.ease+(a.path?' · path('+a.path.length+')':'')+'<br>'+(a.desc||'')+' <button style="padding:1px 7px;font-size:10px;margin-top:3px">▶ preview</button>';
+    dv.innerHTML='<span class="x">×</span><b>'+esc(a.name)+'</b> · '+esc(a.trigger)+' · '+esc(a.dur)+' · '+esc(a.ease)+(a.path?' · path('+a.path.length+')':'')+'<br>'+esc(a.desc)+' <button style="padding:1px 7px;font-size:10px;margin-top:3px">▶ preview</button>';
     dv.querySelector('.x').onclick=()=>{ DB.elements[sel].anims.splice(i,1); save(); renderAnims(); redraw(); };
     dv.querySelector('button').onclick=()=>preview(sel,a);
     P.animList.appendChild(dv);
@@ -293,7 +345,7 @@ document.getElementById('aAdd').onclick=()=>{
 document.getElementById('aPath').onclick=function(){ pathCapture=true; this.textContent='✏ drawing… (draw on stage)'; };
 function preview(selr,a){
   const d=idoc(); let t; try{ t=d.querySelector(selr); }catch(e){}; if(!t) return;
-  const ms=(parseFloat(a.dur)||1)*(String(a.dur).includes('ms')?1:1000);
+  const ms=Math.max(50,(parseFloat(a.dur)||1)*(/ms\s*$/.test(String(a.dur))?1:1000));
   if(a.path&&a.path.length>1){
     const W=d.documentElement.clientWidth,H=d.documentElement.clientHeight;
     const px=a.path.map(p=>[p[0]/100*W,p[1]/100*H]), o=px[0];
@@ -379,6 +431,27 @@ overlay.addEventListener('pointerup',()=>{
   }
 });
 
+overlay.addEventListener('pointercancel',()=>{ drag=null; stroke=null; redraw(); });
+
+// ---- keyboard ----
+document.addEventListener('keydown',e=>{
+  const tag=(e.target.tagName||'').toLowerCase();
+  if(tag==='input'||tag==='textarea'||tag==='select'||e.metaKey||e.ctrlKey||e.altKey) return;
+  const modeKeys={'1':'browse','2':'layout','3':'note','4':'anim','5':'draw'};
+  if(modeKeys[e.key]){ document.querySelector('.modes button[data-m="'+modeKeys[e.key]+'"]').click(); return; }
+  if(e.key==='Escape'){
+    if(pathCapture){ pathCapture=false; document.getElementById('aPath').textContent='✏ draw motion path'; return; }
+    select(null); return;
+  }
+  const dir={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key];
+  if(dir&&sel&&DB.elements[sel]){
+    e.preventDefault(); const pl=ensurePlan(sel); if(!pl) return;
+    const st=e.shiftKey?5:0.5;
+    pl.x=Math.round((pl.x+dir[0]*st)*10)/10; pl.y=Math.round((pl.y+dir[1]*st)*10)/10;
+    save(); syncEdit(); redraw();
+  }
+});
+
 // ---- exports ----
 function aiHandoff(){
   const d=idoc(), W=d?d.documentElement.clientWidth:1600, H=d?d.documentElement.clientHeight:1000;
@@ -407,16 +480,28 @@ function cssOut(){
     out.push((rec.view&&rec.view!=='default'&&rec.view!=='?'?'body[data-view="'+rec.view+'"] ':'')+selr+'{left:'+pl.x+'%;top:'+pl.y+'%;width:'+pl.w+'%}'); }
   return out.join('\n');
 }
-document.getElementById('exportAI').onclick=function(){ P.out.value=aiHandoff(); navigator.clipboard.writeText(P.out.value); this.textContent='✓ Copied'; setTimeout(()=>this.textContent='⧉ Copy AI HANDOFF spec',1300); };
+document.getElementById('exportAI').onclick=function(){ P.out.value=aiHandoff(); copyText(P.out.value); };
 document.getElementById('exportJSON').onclick=()=>{ P.out.value=JSON.stringify(DB,null,1);
   const b=new Blob([P.out.value],{type:'application/json'}), a=document.createElement('a');
-  a.href=URL.createObjectURL(b); a.download='blueprint-data.json'; a.click(); };
-document.getElementById('copyCSS').onclick=function(){ P.out.value=cssOut(); navigator.clipboard.writeText(P.out.value); };
+  a.href=URL.createObjectURL(b); a.download='blueprint-'+SITE.replace(/^.*\//,'').replace(/\.html?$/,'')+'.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); };
+const importFile=document.getElementById('importFile');
+document.getElementById('importJSON').onclick=()=>importFile.click();
+importFile.onchange=()=>{
+  const f=importFile.files[0]; if(!f) return;
+  f.text().then(txt=>{
+    let o; try{ o=JSON.parse(txt); }catch(e){ toast('⚠ not valid JSON'); return; }
+    if(!o||!o.elements){ toast('⚠ not a blueprint file'); return; }
+    if(o.site&&o.site!==SITE&&!confirm('This blueprint was made for '+o.site+'. Load it onto '+SITE+' anyway?')) return;
+    DB=normalise(o); DB.site=SITE; save(); select(null); toast('✓ imported '+Object.keys(DB.elements).length+' elements');
+  }).finally(()=>{ importFile.value=''; });
+};
+document.getElementById('copyCSS').onclick=function(){ P.out.value=cssOut(); copyText(P.out.value); };
 document.getElementById('clearAll').onclick=()=>{ if(confirm('Wipe all blueprint data for '+SITE+'?')){ DB={version:2,site:SITE,elements:{},drawings:{}}; save(); sel=null; select(null); } };
 
 iframe.addEventListener('load',()=>{ setTimeout(()=>{
   // seed the demo page with a few tracked elements so the tool shows something out of the box
-  if(!Object.keys(DB.elements).length&&SITE===TARGET){ ['#hero','#card-1','#card-2','#cta'].forEach(track); }
+  if(!Object.keys(DB.elements).length&&DEMOS.includes(SITE)){
+    (SITE===TARGET?['#hero','#card-1','#card-2','#cta']:['#shelfHero','#rack','#terminal']).forEach(track); }
   renderList(); redraw();
 },1200); });
 renderList();
