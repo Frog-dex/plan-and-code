@@ -124,3 +124,15 @@ A small fake storefront ("Aurora Coffee", warm cream/brown palette, Georgia seri
 6. AI HANDOFF export contains existing + PLANNED rects, notes, animations with path JSON, and the raw DB, and lands on the clipboard.
 7. plan.html: drag the telescope → textarea code updates with snapped coords; rotate via slider; drag the camera dot; copy button yields valid `layout.js` that the page itself can re-import.
 8. `blueprint.html?page=demo/index.html` and any other same-origin page both work, with separate saved state.
+
+---
+
+## Addendum — additions since the first release
+
+These were added on top of the original five files; include them when recreating the current version:
+
+- `index.html` — a static studio home page in the same navy/cyan/gold language: hero with `docs/box.jpg`, one card per tool, a 4-step quick start, a sample of the AI handoff text with a legend, and the Sovereign Software shelf (`docs/shelf/*.jpg`). Responsive down to phone width.
+- `demo/shelf.html` — a second target page built from the shelf box art, with two views toggled through `<body data-view="shelf|terminal">`. Clicking a box "loads the disc" into a CRT terminal view.
+- `blueprint.html` — a ⌂ home link and target-page picker; an **⇑ load** button that re-imports a downloaded JSON; HTML-escaping of every user string written with `innerHTML`; a clipboard fallback; keyboard shortcuts (`1`–`5` modes, arrows nudge 0.5% / `Shift` 5%, `Esc`); the panel stacks under the stage below 760px.
+- `plan.html` — the output is a complete `layout.js` (both `export const ROOM` and `export const ITEMS`), with a download button, a reset button, and keyboard shortcuts (arrows nudge 5 / `Shift` 25, `R` rotate 15°, `Esc`). Rotations are normalised to 0–359.
+- `tests/smoke.cjs` — optional Playwright smoke test.

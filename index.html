@@ -1,0 +1,206 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Plan &amp; Code — Blueprint &amp; Floor-Plan Studio</title>
+<meta name="description" content="Visual planning tools for handing design intent to AI coding agents. Plain HTML, zero dependencies.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%23071427'/%3E%3Cpath d='M6 6h20v20H6z' fill='none' stroke='%237fdfff' stroke-width='2'/%3E%3Cpath d='M11 12h10v8H11z' fill='none' stroke='%23f0dca0' stroke-width='2' stroke-dasharray='3 2'/%3E%3C/svg%3E">
+<style>
+*{box-sizing:border-box}
+:root{--bg:#071427;--panel:#0c1a29;--line:#17384f;--line2:#1d4763;--ink:#bfe6ff;--dim:#5f8ba6;--cyan:#7fdfff;--gold:#f0dca0;--mint:#a8f5cf;--coral:#ff8f7a}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Courier New',ui-monospace,monospace;line-height:1.55;
+  background-image:linear-gradient(rgba(80,180,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(80,180,255,.05) 1px,transparent 1px),linear-gradient(rgba(80,180,255,.10) 1px,transparent 1px),linear-gradient(90deg,rgba(80,180,255,.10) 1px,transparent 1px);
+  background-size:24px 24px,24px 24px,120px 120px,120px 120px}
+a{color:var(--cyan)}
+a:focus-visible,button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+header.bar{position:sticky;top:0;z-index:5;background:rgba(7,20,39,.88);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+header.bar .wrap{display:flex;align-items:center;gap:18px;height:54px}
+.brand{font-weight:bold;letter-spacing:.18em;color:var(--cyan);text-decoration:none;font-size:14px;white-space:nowrap}
+.brand b{color:var(--gold)}
+header nav{display:flex;gap:16px;margin-left:auto;font-size:12.5px;letter-spacing:.06em}
+header nav a{color:#7fb0c8;text-decoration:none}
+header nav a:hover{color:var(--gold)}
+/* hero */
+.hero{display:grid;grid-template-columns:1.25fr .75fr;gap:44px;align-items:center;padding:56px 0 40px}
+.eyebrow{font-size:11px;letter-spacing:.24em;color:var(--mint);text-transform:uppercase;margin:0 0 12px}
+h1{font-size:clamp(30px,5vw,50px);line-height:1.08;margin:0 0 16px;color:#eaf6ff;letter-spacing:.01em}
+h1 em{font-style:normal;color:var(--gold)}
+.lede{font-size:15.5px;color:#9cc7e0;max-width:56ch;margin:0 0 26px}
+.cta{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;text-decoration:none;border-radius:7px;padding:11px 16px;font-size:13px;letter-spacing:.06em;border:1px solid #2b6a92;background:#12314a;color:var(--ink);transition:background .15s,transform .15s}
+.btn:hover{background:#184260;transform:translateY(-1px)}
+.btn.go{background:#134b39;border-color:#2f8a63;color:var(--mint)}
+.btn.go:hover{background:#18604a}
+.box{position:relative;justify-self:center;width:min(100%,360px)}
+.box img{width:100%;height:auto;display:block;border-radius:6px;box-shadow:0 30px 60px -20px rgba(0,0,0,.8),0 0 0 1px rgba(127,223,255,.15);transform:perspective(900px) rotateY(-9deg) rotateX(2deg);transition:transform .4s}
+.box:hover img{transform:perspective(900px) rotateY(0) rotateX(0)}
+.box .tag{position:absolute;left:-14px;bottom:28px;background:var(--gold);color:#2a1d07;font-size:11px;font-weight:bold;letter-spacing:.14em;padding:6px 10px;border-radius:4px;box-shadow:0 6px 14px rgba(0,0,0,.4)}
+/* sections */
+section{padding:40px 0}
+h2{font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--cyan);margin:0 0 6px}
+.h2sub{color:var(--dim);font-size:13px;margin:0 0 24px}
+.tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:10px;text-decoration:none;color:inherit;transition:border-color .15s,transform .15s}
+.card:hover{border-color:#2b6a92;transform:translateY(-2px)}
+.card h3{margin:0;font-size:16px;color:#eaf6ff;letter-spacing:.04em}
+.card p{margin:0;font-size:13px;color:#8fb6cc}
+.card .file{font-size:11px;color:var(--gold);letter-spacing:.06em}
+.card .open{margin-top:auto;font-size:12px;color:var(--mint)}
+.card svg{width:100%;height:auto;display:block;border-radius:6px;background:#050d16;border:1px solid var(--line)}
+/* steps */
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;counter-reset:s;padding:0;margin:0;list-style:none}
+.steps li{counter-increment:s;background:rgba(12,26,41,.7);border:1px dashed var(--line2);border-radius:8px;padding:16px 14px;font-size:13px;color:#9cc7e0}
+.steps li::before{content:counter(s,decimal-leading-zero);display:block;font-size:22px;color:var(--gold);margin-bottom:6px;letter-spacing:.06em}
+.steps b{color:#eaf6ff}
+/* spec sample */
+.spec{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+pre{margin:0;background:#050d16;border:1px solid var(--line2);border-radius:8px;padding:14px;font-size:11.5px;color:#8fd6a8;overflow:auto;white-space:pre}
+pre .k{color:var(--gold)}pre .c{color:var(--dim)}pre .a{color:var(--mint)}
+.legend{display:flex;flex-direction:column;gap:12px;font-size:13px;color:#9cc7e0}
+.legend div{display:flex;gap:12px;align-items:flex-start}
+.legend i{flex:none;width:34px;height:20px;border-radius:3px;margin-top:2px}
+/* shelf */
+.shelf{display:grid;grid-template-columns:repeat(4,1fr);gap:20px 16px;padding:22px 18px 0;background:linear-gradient(#0c1a29,#0a1624);border:1px solid var(--line);border-radius:10px;position:relative}
+.shelf::after{content:"";grid-column:1/-1;height:14px;margin:0 -18px;background:linear-gradient(#3a2b1c,#24190f);border-top:2px solid #5b4430;border-radius:0 0 10px 10px}
+.shelf figure{margin:0;text-align:center}
+.shelf a,.shelf .noLink{display:block;text-decoration:none;color:inherit}
+.shelf img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:4px;box-shadow:0 12px 24px -10px rgba(0,0,0,.9);transition:transform .2s}
+.shelf a:hover img{transform:translateY(-6px) rotate(-1deg)}
+.shelf figcaption{font-size:12px;margin-top:8px;color:#eaf6ff;letter-spacing:.04em}
+.shelf figcaption small{display:block;color:var(--dim);font-size:10.5px;letter-spacing:.02em}
+.shelf .me img{outline:2px solid var(--gold);outline-offset:3px}
+footer{border-top:1px solid var(--line);margin-top:40px;padding:22px 0 40px;font-size:12px;color:var(--dim)}
+footer .wrap{display:flex;flex-wrap:wrap;gap:10px 24px;justify-content:space-between}
+@media (max-width:860px){
+  .hero{grid-template-columns:1fr;padding-top:32px;gap:28px}
+  .box{order:-1;width:min(60%,230px)}
+  .box img{transform:none}
+  .steps{grid-template-columns:repeat(2,1fr)}
+  .spec{grid-template-columns:1fr}
+  .shelf{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:520px){
+  header nav a.opt{display:none}
+  .steps{grid-template-columns:1fr}
+  .box .tag{left:-6px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style></head>
+<body>
+<header class="bar"><div class="wrap">
+  <a class="brand" href="#top">PLAN <b>&amp;</b> CODE</a>
+  <nav><a href="blueprint.html">Blueprint</a><a href="plan.html">Floor Plan</a><a class="opt" href="#spec">Handoff spec</a><a class="opt" href="#shelf">Shelf</a></nav>
+</div></header>
+
+<main id="top" class="wrap">
+  <div class="hero">
+    <div>
+      <p class="eyebrow">Blueprint &amp; floor-plan studio</p>
+      <h1>Plan it on the <em>real</em> page.<br>Hand it to an AI.</h1>
+      <p class="lede">Browse your live site, drag gold “planned” boxes where things should go, scribble notes and motion paths — then copy one <b>AI HANDOFF</b> spec that any coding agent can apply. Plain HTML files. No install, no build, nothing leaves your machine.</p>
+      <div class="cta">
+        <a class="btn go" href="blueprint.html">▦ Open Site Blueprint</a>
+        <a class="btn" href="plan.html">◉ Open 3D Floor Plan</a>
+        <a class="btn" href="https://github.com/Frog-dex/plan-and-code">★ Source on GitHub</a>
+      </div>
+    </div>
+    <div class="box"><img src="docs/box.jpg" width="671" height="900" alt="Plan &amp; Code box art: an isometric blueprint house with drafting tools"><span class="tag">ZERO DEPENDENCIES</span></div>
+  </div>
+
+  <section id="tools" aria-labelledby="tools-h">
+    <h2 id="tools-h">The tools</h2>
+    <p class="h2sub">Each one is a single HTML file. Serve the folder and open it.</p>
+    <div class="tools">
+      <a class="card" href="blueprint.html">
+        <svg viewBox="0 0 280 130" aria-hidden="true"><defs><pattern id="g1" width="14" height="14" patternUnits="userSpaceOnUse"><path d="M14 0H0V14" fill="none" stroke="#123049"/></pattern></defs>
+          <rect width="280" height="130" fill="url(#g1)"/><rect x="22" y="18" width="120" height="44" fill="none" stroke="#41b0ff" stroke-width="1.6"/>
+          <rect x="140" y="58" width="118" height="52" fill="rgba(240,220,160,.08)" stroke="#f0dca0" stroke-width="2" stroke-dasharray="8 5"/>
+          <line x1="82" y1="40" x2="199" y2="84" stroke="#f0dca0" stroke-dasharray="3 5"/><path d="M30 100 Q70 70 110 96" fill="none" stroke="#a8f5cf" stroke-width="2" stroke-dasharray="2 5"/>
+          <text x="144" y="52" fill="#f0dca0" font-size="10" font-family="Courier New">hero (planned)</text></svg>
+        <span class="file">blueprint.html</span>
+        <h3>Site Blueprint</h3>
+        <p>Overlay a drafting layer on any same-origin page. Track elements, drag planned layouts, attach notes, draw motion paths, export the AI handoff.</p>
+        <span class="open">open →</span>
+      </a>
+      <a class="card" href="plan.html">
+        <svg viewBox="0 0 280 130" aria-hidden="true"><rect width="280" height="130" fill="#08131f"/><rect x="20" y="12" width="240" height="106" fill="none" stroke="#7fdfff" stroke-width="2.5"/>
+          <rect x="100" y="22" width="80" height="32" rx="3" fill="rgba(127,223,255,.15)" stroke="#7fdfff" stroke-width="1.5"/>
+          <rect x="112" y="27" width="22" height="16" rx="2" fill="rgba(255,176,96,.2)" stroke="#ffb060" stroke-width="1.4"/>
+          <rect x="34" y="40" width="30" height="30" rx="3" fill="rgba(127,223,255,.15)" stroke="#7fdfff" stroke-width="1.5" transform="rotate(30 49 55)"/>
+          <rect x="200" y="74" width="26" height="22" rx="3" fill="rgba(255,127,106,.2)" stroke="#ff7f6a" stroke-width="1.5"/>
+          <polygon points="140,106 30,14 250,14" fill="rgba(240,220,160,.05)" stroke="#5f4a24" stroke-dasharray="4 4"/><circle cx="140" cy="106" r="6" fill="#f0dca0"/></svg>
+        <span class="file">plan.html</span>
+        <h3>3D Floor Plan</h3>
+        <p>Architect-style top-down editor for three.js scenes. Drag objects and the camera; it writes the exact <code>models/layout.js</code> your scene imports.</p>
+        <span class="open">open →</span>
+      </a>
+      <a class="card" href="blueprint.html?page=.%2Fdemo%2Fshelf.html">
+        <svg viewBox="0 0 280 130" aria-hidden="true"><rect width="280" height="130" fill="#0c1a29"/>
+          <g fill="#173a57" stroke="#2b6a92"><rect x="24" y="24" width="44" height="60" rx="3"/><rect x="80" y="24" width="44" height="60" rx="3"/><rect x="136" y="24" width="44" height="60" rx="3"/><rect x="192" y="24" width="44" height="60" rx="3"/></g>
+          <rect x="16" y="88" width="248" height="8" fill="#3a2b1c"/><rect x="132" y="20" width="52" height="68" fill="none" stroke="#f0dca0" stroke-dasharray="6 4" stroke-width="1.6"/>
+          <text x="24" y="116" fill="#a8f5cf" font-size="10" font-family="Courier New">data-view: shelf · terminal</text></svg>
+        <span class="file">demo/shelf.html</span>
+        <h3>Software Shelf demo</h3>
+        <p>A two-view sample page built from the Sovereign Software box art. Flip its views to see per-view drawings and view-scoped plans.</p>
+        <span class="open">blueprint it →</span>
+      </a>
+    </div>
+  </section>
+
+  <section id="how" aria-labelledby="how-h">
+    <h2 id="how-h">Try it in 60 seconds</h2>
+    <p class="h2sub">Serve the folder (<code>python3 -m http.server 8080</code>), open the blueprint, then:</p>
+    <ol class="steps">
+      <li><b>✥ Plan</b> — click the hero on the demo page to track it.</li>
+      <li><b>Drag</b> the gold dashed box somewhere new, or nudge it with the arrow keys.</li>
+      <li><b>◉ Animate</b> — draw a motion path on the stage, add a spec, hit ▶ preview.</li>
+      <li><b>⧉ Copy AI HANDOFF</b> and paste it into your coding agent with the spec.</li>
+    </ol>
+  </section>
+
+  <section id="spec" aria-labelledby="spec-h">
+    <h2 id="spec-h">What the AI receives</h2>
+    <p class="h2sub">A readable diff, then the raw JSON. The contract lives in <a href="docs/BLUEPRINT-README.md">docs/BLUEPRINT-README.md</a>.</p>
+    <div class="spec">
+<pre><span class="c"># SITE BLUEPRINT — AI HANDOFF (v2)</span>
+Site: ./demo/index.html · viewport 1045x828
+
+<span class="k">## hero  (#hero)  · view:default</span>
+existing: left 0.0% · top 6.2% · w 100.0% · h 31.2%
+PLANNED:  left 0% · top 6.5% · w 100% · h 42%
+- NOTE: make the hero taller, image behind the title
+<span class="a">- ANIMATION "rise-in": trigger=power-on duration=900ms
+  easing=ease-out — title floats up and settles</span>
+  motion-path (viewport %): [[50,40],[50,33],[50,30]]
+
+<span class="k">## RAW JSON (authoritative)</span>
+{"version":2,"site":"./demo/index.html", …}</pre>
+      <div class="legend">
+        <div><i style="border:2px solid #41b0ff"></i><span><b>Existing</b> — where the element really is in the live code right now.</span></div>
+        <div><i style="border:2px dashed #f0dca0;background:rgba(240,220,160,.08)"></i><span><b>Planned</b> — where you dragged it. The AI makes this real in the element’s own CSS system.</span></div>
+        <div><i style="border-top:2px dashed #a8f5cf;height:0;margin-top:11px"></i><span><b>Motion path</b> — a hand-drawn trajectory in viewport %, attached to an animation spec.</span></div>
+        <div><i style="background:#0a2036;border:1px solid #1d4763;text-align:center;font-style:normal;color:#ffd98a;font-size:12px">✎</i><span><b>Notes</b> — one instruction per line. The AI is told to honor every one.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="shelf" aria-labelledby="shelf-h">
+    <h2 id="shelf-h">The Sovereign Software shelf</h2>
+    <p class="h2sub">Every box on the Spirit Strikers software shelf. Put the discs in the terminal at <a href="https://frog-dex.github.io/terrace-world/library.html#software">the Terrace World library</a>.</p>
+    <div class="shelf">
+      <figure><a href="https://github.com/Frog-dex/terrace-world"><img loading="lazy" src="docs/shelf/terrace-world.jpg" alt="Terrace World box"><figcaption>Terrace World<small>the game</small></figcaption></a></figure>
+      <figure><span class="noLink"><img loading="lazy" src="docs/shelf/snowberry-os.jpg" alt="Snowberry OS box"><figcaption>Snowberry OS<small>early build, not released yet</small></figcaption></span></figure>
+      <figure><span class="noLink"><img loading="lazy" src="docs/shelf/lizard-widget.jpg" alt="Lizard Widget box"><figcaption>Lizard Widget<small>add-on, not released yet</small></figcaption></span></figure>
+      <figure><span class="noLink"><img loading="lazy" src="docs/shelf/frog-widget.jpg" alt="Frog Widget box"><figcaption>Frog Widget<small>add-on, not released yet</small></figcaption></span></figure>
+      <figure><a href="https://github.com/Frog-dex/3d-models-pack"><img loading="lazy" src="docs/shelf/models-pack.jpg" alt="3D Models Pack box"><figcaption>3D Models Pack<small>thirteen free models</small></figcaption></a></figure>
+      <figure class="me"><a href="https://github.com/Frog-dex/plan-and-code"><img loading="lazy" src="docs/shelf/plan-and-code.jpg" alt="Plan &amp; Code box"><figcaption>Plan &amp; Code<small>you are here</small></figcaption></a></figure>
+      <figure><a href="https://github.com/Frog-dex/krita-agent"><img loading="lazy" src="docs/shelf/krita-agent.jpg" alt="Krita Agent box"><figcaption>Krita Agent<small>AI tools inside Krita</small></figcaption></a></figure>
+      <figure><a href="https://github.com/Frog-dex/card-forge"><img loading="lazy" src="docs/shelf/card-forge.jpg" alt="Card Forge box"><figcaption>Card Forge<small>card-making studio</small></figcaption></a></figure>
+    </div>
+  </section>
+</main>
+
+<footer><div class="wrap">
+  <span>MIT © 2026 Blu Inman · Frog-dex</span>
+  <span>Everything is client-side — plans live in your browser’s localStorage.</span>
+</div></footer>
+</body></html>
